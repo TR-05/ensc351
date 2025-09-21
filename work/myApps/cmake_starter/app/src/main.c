@@ -21,8 +21,8 @@ int main()
     led_initialize();
     led_pwr_set_off();
 
-    led_act_set_blink(100,100);
-    led_pwr_set_blink(50,150);
+    led_act_set_blink(50,50);
+    led_pwr_set_blink(50,500);
 
     // Sleep for 1.5s
     for (int i = 0; i < 5; i++) {

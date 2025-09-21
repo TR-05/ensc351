@@ -1,0 +1,46 @@
+echo host side stuff
+./Desktop/internetToTarget.sh
+
+ssh-keygen -f "/home/trevor/.ssh/known_hosts" -R "192.168.7.2"
+ssh-copy-id trevor@192.168.7.2
+ssh trevor@192.168.7.2
+
+echo target side stuff
+
+sudo nano /etc/systemd/resolved.conf
+echo • Add the following line under the [RESOLVE] section:
+echo DNS=8.8.8.8
+
+
+#part 2
+sudo reboot
+ssh trevor@192.168.7.2
+
+sudo route add default gw 192.168.7.1
+echo Install NFS client:
+sudo apt update
+sudo apt upgrade # Optional, but a reasonable idea
+sudo apt install nfs-common
+sudo mkdir /mnt/remote
+sudo chown trevor /mnt/remote
+sudo mount -t nfs 192.168.7.1:/home/trevor/ENSC351/public /mnt/remote
+
+
+echo spi stuff
+cp -R /opt/source/dtb-6.12-Beagle ~
+cd ~
+git clone https://github.com/wcs3/BYAI-mcu_spi0.git
+cd ~/dtb-6.12-Beagle/src/arm64/overlays/
+cp ~/BYAI-mcu_spi0/k3-am67a-beagley-ai-spidev0-mcu.dts .
+
+echo edit in nano this under rtc0 in alias:    spi0 = &mcu_spi0;
+nano ~/dtb-6.12-Beagle/src/arm64/ti/k3-am67a-beagley-ai.dts
+
+
+
+# DO NOT RUN SUDO MAKE INSTALL_ARM64 - IT MAKES THE BOARD UNRESPONSIVE AND I DONT KNOW HOW TO FIX IT
+cd ~/dtb-6.12-Beagle/
+make
+sudo make install_arm64
+echo 6. Enable the SPI overlay and configure buffer size:
+nano /boot/firmware/extlinux/extlinux.conf
