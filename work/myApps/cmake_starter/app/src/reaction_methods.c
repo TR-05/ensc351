@@ -8,6 +8,8 @@
 #include <stdlib.h>
 #include <time.h>
 
+// this file sucks
+
 void reaction_initialize(void)
 {
     srand(time(NULL));

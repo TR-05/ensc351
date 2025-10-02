@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h>
+#include <unistd.h>
+
 #include "hal/led.h"
 
 //#define DEBUG_MODE
@@ -14,12 +15,8 @@
 #define ACT_BRIGHTNESS_FILE "/sys/class/leds/ACT/brightness"
 #define PWR_BRIGHTNESS_FILE "/sys/class/leds/PWR/brightness"
 
-
-void led_sleep_ms(int sleep_ms) {
-    long nanoseconds = sleep_ms * 1000000; // multiply milliseconds by 10^6 to get nanoseconds
-    struct timespec reqDelay = {0, nanoseconds};
-    nanosleep(&reqDelay, (struct timespec *) NULL);
-}
+#define MS_TO_NS 1000000
+#define FILE_CREATE_WRITE_DELAY_NS 10000
 
 void led_write_to_file(char *file_address, char *data)
 {
@@ -50,10 +47,6 @@ void led_write_to_file(char *file_address, char *data)
 // set all LED addressable parameters to a known state, and set initalized = true so that other functions work appropriately
 void led_initialize()
 {
-    //printf("ACT_TRIGGER_FILE: %s\n", ACT_TRIGGER_FILE);
-    //printf("PWR_TRIGGER_FILE: %s\n", PWR_TRIGGER_FILE);
-    //printf("PWR_DELAY_ON_FILE: %s\n", PWR_DELAY_ON_FILE);
-    //printf("PWR_DELAY_OFF_FILE: %s\n", PWR_DELAY_OFF_FILE);
     led_pwr_set_off();
     led_act_set_off();
 }
@@ -90,7 +83,7 @@ void led_pwr_set_blink(int on_time_ms, int off_time_ms)
     snprintf(off_time_str, sizeof(off_time_str), "%d", off_time_ms);
     led_write_to_file(PWR_TRIGGER_FILE, "timer");
     led_write_to_file(PWR_BRIGHTNESS_FILE, "1");
-    led_sleep_ms(10); // 10ms appears to work fine but should do more testing
+    usleep(FILE_CREATE_WRITE_DELAY_NS); // 10ms appears to work fine but should do more testing
     led_write_to_file(PWR_DELAY_OFF_FILE, off_time_str);
     led_write_to_file(PWR_DELAY_ON_FILE, on_time_str);
 }
@@ -103,7 +96,7 @@ void led_act_set_blink(int on_time_ms, int off_time_ms)
     snprintf(off_time_str, sizeof(off_time_str), "%d", off_time_ms);
     led_write_to_file(ACT_TRIGGER_FILE, "timer");
     led_write_to_file(ACT_BRIGHTNESS_FILE, "1");
-    led_sleep_ms(10); // 10ms appears to work fine but should do more testing
+    usleep(FILE_CREATE_WRITE_DELAY_NS); // 10ms appears to work fine but should do more testing
     led_write_to_file(ACT_DELAY_OFF_FILE, off_time_str);
     led_write_to_file(ACT_DELAY_ON_FILE, on_time_str);
 }
