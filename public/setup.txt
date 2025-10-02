@@ -49,3 +49,59 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 
 sudo reboot
+
+sudo hostnamectl set-hostname bagelBone
+sudo nano /etc/hostname
+echo may need to edit this
+sudo systemctl restart systemd-hostnamed
+
+sudo nano /etc/locale.gen
+echo uncomment en_CA.UTF-8 UTF-8
+
+echo add in ascii art here, ascii art kept in ascii.txt for clarity
+sudo nano /etc/motd
+echo copy past all of ascii.txt in
+
+# Create the service file using the absolute path to your script
+sudo cat <<EOF > /etc/systemd/system/my_custom_boot.service
+[Unit]
+Description=My Custom Boot Startup Script
+After=network.target
+
+[Service]
+ExecStart=/home/trevor/bootScript.sh
+StandardOutput=journal
+StandardError=journal
+Type=oneshot
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable my_custom_boot.service
+sudo systemctl start my_custom_boot.service
+systemctl status my_custom_boot.service
+
+sudo systemctl enable systemd-networkd-wait-online.service
+sudo systemctl start systemd-networkd-wait-online.service
+
+ssh trevor@192.168.7.2
+journalctl -u my_custom_boot.service -f
+
+
+echo network config stuff for a1
+ip a
+ip r
+cat /etc/resolv.conf
+ping 192.168.7.1
+hostname -I
+
+echo misc a1 stuff
+cat ../../proc/version
+cat ../../proc/uptime
+cat ../../boot/firmware/ID.txt
+
+
+

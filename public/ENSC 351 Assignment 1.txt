@@ -1,0 +1,54 @@
+ENSC 351 Assignment 1 Marking Guide
+
+Assignment must be done individually.
+
+Total: [50] Marks
+
+[40] Reaction Timer
+x    Optional: seed random generator (srand) by timer
+x    [3] Waits random time 
+x    [5] Detects "too soon"; handles correctly
+x    [5] Picks up or down randomly; adjusts LEDs; prints message
+x    [5] Exits if no input for 5s
+x    [5] Pressing left or right exits
+x       - Pressing and releasing during the wait need not be handled.
+x       - Pressing and holding left or right through the "too soon" check should work
+         (application exits).
+x    [5] If user inputs incorrect direction, displays message and flashes correctly.
+x    [7] If user inputs correct direction, display message, flash correct, and display response time
+x    [5] Best response time yet for a correct input is tracked and displayed
+    [0] Code Quality (-10 penalty possible)
+ehhh        - Well organized file with comment at top of file to indicate its purpose.
+ehhh        - OK to have no comments in the rest of the code if it's very well organized and 100% readable
+ehhh        - Program broken down into meaningful, well named, well ordered functions.
+x        - Has 2 (or more) HAL modules (deduction -5 per each missing if functions implement in app)
+maybe fine?        - All variables appropriately named.
+needs work        - No magic numbers in code (0 and 1 are often OK).
+    
+[10] RFS Customization and Networking Setup
+    * Marked based on as1-capture.txt
+
+    [2] Networking
+x?        - Show host & target config
+x        - Ping target & host
+x        - Ping google (from target) (may or may not work at school without vpn to bypass sfu firewall)
+    [6] RFS Config
+x        [2] hostname changed
+x        [2] See ASCII message on log-in
+x* need to run journal command to see output        [2] Runs game automatically
+    [2] Other
+x        - See contents of /ID.txt, /proc/version, and proc/uptime
+        - Mount NFS via script & display contents
+
+    Output capture must show the expected commands and reasonable output.
+    If any errors in command execution, you may just re-execute the command without having to
+    completely correct your output. However, it should not contain large numbers of errors
+    or unrelated commands.
+
+
+Forward to Matthew if...
+- Material is suspiciously similar to another submission.
+- Inconsistent submission (inconsistent trace indicating results are forged).
+- All proven cases of academic dishonesty will be dealt with according to SFU's Academic Honesty policy:
+  http://www.sfu.ca/policies/gazette/student.html
+

@@ -6,7 +6,8 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <time.h>
-#include "./app/src/reaction_methods.h"
+#include <stdbool.h>
+#include "reaction_methods.h"
 
 int main()
 {
@@ -17,16 +18,21 @@ int main()
     // main game loop
     while (true)
     {
+        // print Get Ready and blink LEDs
         reaction_prep_user();
-        // repeat regeneration if player inputs too soon
-        while(reaction_gen_rng() == 1);
 
-        // wait for player input or break if player is inactive
-        while (true)
+        // repeat random generation if player inputs too soon
+        int dir = reaction_gen_rng();
+        if (dir == 0)
         {
-            if (fabs(joystick_get_x_normalized()) > 0.75 || fabs(joystick_get_y_normalized()) > 0.75) break;
-            if (reaction_read_timer_ms() >= 5000) break;   // 5 second timeout
+            printf("User selected to quit.\n");
+            fflush(stdout);
+            break;
         }
+        reaction_start_timer();
+        // wait for player input or break if player is inactive
+        while (!(fabs(joystick_get_x_normalized()) > 0.75 || fabs(joystick_get_y_normalized()) > 0.75 || reaction_read_timer_ms() >= 5000))
+            ;
 
         // save loop time before anything else for accuracy
         float reaction_time = reaction_read_timer_ms();
@@ -35,10 +41,11 @@ int main()
         if (reaction_read_timer_ms() >= 5000)
         {
             printf("No input within 5000ms; quitting!\n");
+            fflush(stdout);
             break; // 5 second timeout
         }
 
-        // turn off leds ones reaction test is finished
+        // turn off leds once reaction test is finished
         led_act_set_off();
         led_pwr_set_off();
 
@@ -50,6 +57,7 @@ int main()
         if (fabs(x) > 0.75)
         {
             printf("User selected to quit.\n");
+            fflush(stdout);
             break;
         }
 
@@ -57,12 +65,15 @@ int main()
         if (y / fabs(y) == dir)
         {
             printf("Correct!\n");
+            fflush(stdout);
             if (reaction_time < best_time)
             {
                 best_time = reaction_time;
                 printf("New best time!\n");
+                fflush(stdout);
             }
             printf("Your reaction time was %dms; best so far in game is %dms\n", (int)reaction_time, (int)best_time);
+            fflush(stdout);
             for (int i = 0; i < 5; i++)
             {
                 led_act_set_on();
@@ -75,6 +86,7 @@ int main()
         else
         {
             printf("Incorrect.\n");
+            fflush(stdout);
             for (int i = 0; i < 5; i++)
             {
                 led_pwr_set_on();
