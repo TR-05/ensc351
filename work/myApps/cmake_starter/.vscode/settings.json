@@ -12,6 +12,7 @@
         "errno.h": "c",
         "string.h": "c",
         "button.h": "c",
-        "stdbool.h": "c"
+        "stdbool.h": "c",
+        "joystick.h": "c"
     }
 }
