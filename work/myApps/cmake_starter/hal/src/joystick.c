@@ -27,12 +27,12 @@ simple joystick reading via the MCP3208 ADC over spi
 #define SPI_SPEED 250000
 
 // modifiable joystick calibration values, used for normaling output from -1 to 1
-static int x_max_val = 3071;
-static int x_mid_val = 2550;
-static int x_min_val = 2048;
-static int y_max_val = 3071;
-static int y_mid_val = 2556;
-static int y_min_val = 2048;
+static int x_max_val = 4096;
+static int x_mid_val = 2048;
+static int x_min_val = 0;
+static int y_max_val = 4096;
+static int y_mid_val = 2048;
+static int y_min_val = 0;
 
 // JOYSTICK methods
 static int fd;

@@ -52,6 +52,7 @@ void reaction_prep_user(void)
     }
     while (fabs(joystick_get_y_normalized()) > 0.1)
     {
+        printf("y: %.2f\n",joystick_get_y_normalized());
         usleep(10000); // 10 ms loop as it really isn't critical
     }
 }
