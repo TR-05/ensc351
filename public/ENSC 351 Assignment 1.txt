@@ -38,7 +38,7 @@ x        [2] See ASCII message on log-in
 x* need to run journal command to see output        [2] Runs game automatically
     [2] Other
 x        - See contents of /ID.txt, /proc/version, and proc/uptime
-        - Mount NFS via script & display contents
+x        - Mount NFS via script & display contents
 
     Output capture must show the expected commands and reasonable output.
     If any errors in command execution, you may just re-execute the command without having to

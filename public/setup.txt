@@ -105,3 +105,68 @@ cat ../../boot/firmware/ID.txt
 
 
 
+
+echo XBOX Kinect V2 setup
+ON TARGET:
+sudo apt update
+sudo apt install build-essential cmake pkg-config
+sudo apt install libusb-1.0-0-dev
+sudo apt install libglfw3-dev libva-dev
+sudo apt install libturbojpeg-dev
+
+cd ~
+git clone https://github.com/OpenKinect/libfreenect2.git
+cd libfreenect2
+mkdir build
+cd build
+
+cmake -DBUILD_EXAMPLES=ON -DCMAKE_INSTALL_PREFIX=$HOME/freenect2_install ..
+make
+make install
+
+sudo nano /etc/udev/rules.d/90-kinect2.rules
+echo paste this in: 
+# BUS: 03, DEVICE: 02
+SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02c4", MODE="0666"
+# BUS: 03, DEVICE: 03
+SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02d0", MODE="0666"
+# BUS: 03, DEVICE: 04
+SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02d8", MODE="0666"
+# BUS: 03, DEVICE: 05
+SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02da", MODE="0666"
+# BUS: 03, DEVICE: 06
+SUBSYSTEM=="usb", ATTR{idVendor}=="045e", ATTR{idProduct}=="02db", MODE="0666"
+
+sudo udevadm control --reload-rules
+sudo udevadm trigger
+
+export LD_LIBRARY_PATH=$HOME/freenect2_install/lib:$LD_LIBRARY_PATH
+$HOME/freenect2_install/bin/Protonect
+./bin/Protonect
+
+# Define the installation path
+export FREENECT2_HOME=$HOME/freenect2_install
+# Set the C compiler flag path to headers
+export CFLAGS="-I$FREENECT2_HOME/include"
+# Set the Linker flag path to libraries
+export LDFLAGS="-L$FREENECT2_HOME/lib -Wl,-rpath,$FREENECT2_HOME/lib"
+# Set the runtime library path (this was already done, but is good practice)
+export LD_LIBRARY_PATH=$FREENECT2_HOME/lib:$LD_LIBRARY_PATH
+
+cp /home/trevor/libfreenect2/include/libfreenect2/*.h ~/freenect2_install/include/libfreenect2/
+
+g++ $CFLAGS depth_viewer.c -o depth_viewer $LDFLAGS -lfreenect2 -lusb-1.0
+
+export LIBFREENECT2_PIPELINE=cpu
+./depth_viewer
+
+ON HOST:
+scp trevor@192.168.7.2:~/depth_frame_*.csv ~/ENSC351/work/frames
+
+sudo apt update
+sudo apt install python3-pip
+sudo apt install python3-numpy python3-matplotlib
+
+
+cd ~/ENSC351/work/frames
+python3 visualize_depth.py 'depth_frame_*.csv'
