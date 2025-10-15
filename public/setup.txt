@@ -63,10 +63,13 @@ sudo nano /etc/motd
 echo copy past all of ascii.txt in
 
 sudo nano ~/.profile
-echo add /home/trevor/a1 as the last line of the file
+echo add to end of file:
+#/home/trevor/a1
+sudo /home/trevor/internetToTarget.sh
+sudo /home/trevor/mountNFS.sh
+
 
 ssh trevor@192.168.7.2
-journalctl -u my_custom_boot.service -f
 
 
 echo network config stuff for a1
