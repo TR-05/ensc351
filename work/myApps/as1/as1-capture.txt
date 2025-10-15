@@ -1,0 +1,147 @@
+trevor@trr3-beagle:~$ ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: dummy0: <BROADCAST,NOARP> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether ce:87:63:45:e2:21 brd ff:ff:ff:ff:ff:ff
+3: eth0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 04:25:e8:ae:fd:37 brd ff:ff:ff:ff:ff:ff
+    altname enx0425e8aefd37
+4: wlan0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 68:23:b0:1e:bc:9a brd ff:ff:ff:ff:ff:ff
+5: SoftAp0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 6a:23:b0:1e:bc:9b brd ff:ff:ff:ff:ff:ff
+6: usb0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 1c:ba:8c:a2:ed:6b brd ff:ff:ff:ff:ff:ff
+    inet 192.168.7.2/24 brd 192.168.7.255 scope global usb0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::1eba:8cff:fea2:ed6b/64 scope link proto kernel_ll 
+       valid_lft forever preferred_lft forever
+trevor@trr3-beagle:~$ ping 192.168.7.2
+PING 192.168.7.2 (192.168.7.2) 56(84) bytes of data.
+64 bytes from 192.168.7.2: icmp_seq=1 ttl=64 time=0.124 ms
+64 bytes from 192.168.7.2: icmp_seq=2 ttl=64 time=0.101 ms
+64 bytes from 192.168.7.2: icmp_seq=3 ttl=64 time=0.121 ms
+^C
+--- 192.168.7.2 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2049ms
+rtt min/avg/max/mdev = 0.101/0.115/0.124/0.010 ms
+trevor@trr3-beagle:~$ ssh trevor@192.168.7.2
+Debian GNU/Linux 13
+
+BeagleBoard.org Debian Trixie Base Image 2025-08-29
+Support: https://bbb.io/debian
+default username is [trevor]
+
+trevor@192.168.7.2's password: 
+             +######-+##########-+######-           
+          .################################         
+         ####################################       
+       .#                                   .+      
+       +######################################.     
+        +######-   +#-          ##-   +######-      
+                +####################.              
+    +#######   ### +- ##-  -#######   ###.   +##    
+    .+####++.  ###### ###   ++#####-  ####-  ###    
+       ##+     ######+##+     ###+ #  ###### ###    
+       ##+     +## #####-     ###+  # #+# +-##+#    
+       #++     ++# +##+#-    .#++++ .+#+#  +#--#    
+       #++     ++##   ##-    ###+  # +#+#    ++#    
+              .+ #      #   .+      # #             
+              +##       #####+      -##.            
+              -#.       +   +.       ##-            
+              +#.       #####.       ##             
+              .#.       #####.       +#             
+                        #####.                      
+                        #####.                      
+                        #####.                      
+                        ######                      
+Welcome Trevor!
+Last login: Wed Oct 15 14:50:14 2025 from 192.168.7.1
+Hello embedded world, from Trevor!
+
+When the LEDs light up, press the joystick in that direction!
+(Press left or right to exit)
+Get ready...
+Press UP now!
+Correct!
+New best time!
+Your reaction time was 599ms; best so far in game is 599ms
+Get ready...
+Press UP now!
+Correct!
+Your reaction time was 623ms; best so far in game is 599ms
+Get ready...
+Press DOWN now!
+Correct!
+New best time!
+Your reaction time was 435ms; best so far in game is 435ms
+Get ready...
+Press UP now!
+Incorrect.
+Get ready...
+User selected to quit.
+trevor@trr3-beagle:~$ sudo ./internetToTarget.sh
+[sudo] password for trevor: 
+SIOCADDRT: File exists
+Routed!
+trevor@trr3-beagle:~$ ip addr
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: dummy0: <BROADCAST,NOARP> mtu 1500 qdisc noop state DOWN group default qlen 1000
+    link/ether ce:87:63:45:e2:21 brd ff:ff:ff:ff:ff:ff
+3: eth0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 04:25:e8:ae:fd:37 brd ff:ff:ff:ff:ff:ff
+    altname enx0425e8aefd37
+4: wlan0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 68:23:b0:1e:bc:9a brd ff:ff:ff:ff:ff:ff
+5: SoftAp0: <NO-CARRIER,BROADCAST,MULTICAST,UP> mtu 1500 qdisc mq state DOWN group default qlen 1000
+    link/ether 6a:23:b0:1e:bc:9b brd ff:ff:ff:ff:ff:ff
+6: usb0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether 1c:ba:8c:a2:ed:6b brd ff:ff:ff:ff:ff:ff
+    inet 192.168.7.2/24 brd 192.168.7.255 scope global usb0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::1eba:8cff:fea2:ed6b/64 scope link proto kernel_ll 
+       valid_lft forever preferred_lft forever
+trevor@trr3-beagle:~$ ping 192.168.7.1
+PING 192.168.7.1 (192.168.7.1) 56(84) bytes of data.
+64 bytes from 192.168.7.1: icmp_seq=1 ttl=64 time=1.93 ms
+64 bytes from 192.168.7.1: icmp_seq=2 ttl=64 time=2.32 ms
+64 bytes from 192.168.7.1: icmp_seq=3 ttl=64 time=2.24 ms
+^C
+--- 192.168.7.1 ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+rtt min/avg/max/mdev = 1.928/2.161/2.315/0.167 ms
+trevor@trr3-beagle:~$ ping google.ca
+PING google.ca (142.250.73.99) 56(84) bytes of data.
+64 bytes from pnseaa-an-in-f3.1e100.net (142.250.73.99): icmp_seq=1 ttl=127 time=25.3 ms
+64 bytes from pnseaa-an-in-f3.1e100.net (142.250.73.99): icmp_seq=2 ttl=127 time=26.8 ms
+64 bytes from pnseaa-an-in-f3.1e100.net (142.250.73.99): icmp_seq=3 ttl=127 time=28.8 ms
+^C
+--- google.ca ping statistics ---
+3 packets transmitted, 3 received, 0% packet loss, time 2003ms
+rtt min/avg/max/mdev = 25.253/26.947/28.776/1.441 ms
+trevor@trr3-beagle:~$ cat /boot/firmware/ID.txt
+BeagleBoard.org Debian Trixie Base Image 2025-08-29
+trevor@trr3-beagle:~$ cat /proc/version
+Linux version 6.1.83-ti-arm64-r72 (voodoo@rpi5b8g-66) (gcc (Debian 14.2.0-19) 14.2.0, GNU ld (GNU Binutils for Debian) 2.44) #1trixie SMP PREEMPT_DYNAMIC Wed Aug  6 18:28:52 UTC 2025
+trevor@trr3-beagle:~$ cat /proc/uptime
+3014.65 11965.02
+trevor@trr3-beagle:~$ sudo ./mountNFS.sh
+Mounted!
+trevor@trr3-beagle:~$ cd ../../mnt/remote
+trevor@trr3-beagle:/mnt/remote$ ls
+ ascii.txt      'ENSC 351 Assignment 1.txt'   myApps      unknownGuySetup.sh
+ bootScript.sh   mountNFS.sh                  setup.txt
+trevor@trr3-beagle:/mnt/remote$ exit
+logout
+Connection to 192.168.7.2 closed.
+trevor@trr3-beagle:~$ 
+

@@ -50,10 +50,10 @@ sudo udevadm trigger
 
 sudo reboot
 
-sudo hostnamectl set-hostname bagelBone
 sudo nano /etc/hostname
 echo may need to edit this
-sudo systemctl restart systemd-hostnamed
+sudo nano /etc/hosts
+sudo reboot
 
 sudo nano /etc/locale.gen
 echo uncomment en_CA.UTF-8 UTF-8
@@ -62,30 +62,8 @@ echo add in ascii art here, ascii art kept in ascii.txt for clarity
 sudo nano /etc/motd
 echo copy past all of ascii.txt in
 
-# Create the service file using the absolute path to your script
-sudo cat <<EOF > /etc/systemd/system/my_custom_boot.service
-[Unit]
-Description=My Custom Boot Startup Script
-After=network.target
-
-[Service]
-ExecStart=/home/trevor/bootScript.sh
-StandardOutput=journal
-StandardError=journal
-Type=oneshot
-RemainAfterExit=yes
-
-[Install]
-WantedBy=multi-user.target
-EOF
-
-sudo systemctl daemon-reload
-sudo systemctl enable my_custom_boot.service
-sudo systemctl start my_custom_boot.service
-systemctl status my_custom_boot.service
-
-sudo systemctl enable systemd-networkd-wait-online.service
-sudo systemctl start systemd-networkd-wait-online.service
+sudo nano ~/.profile
+echo add /home/trevor/a1 as the last line of the file
 
 ssh trevor@192.168.7.2
 journalctl -u my_custom_boot.service -f
@@ -145,12 +123,12 @@ $HOME/freenect2_install/bin/Protonect
 ./bin/Protonect
 
 # Define the installation path
-export FREENECT2_HOME=$HOME/freenect2_install
 # Set the C compiler flag path to headers
-export CFLAGS="-I$FREENECT2_HOME/include"
 # Set the Linker flag path to libraries
-export LDFLAGS="-L$FREENECT2_HOME/lib -Wl,-rpath,$FREENECT2_HOME/lib"
 # Set the runtime library path (this was already done, but is good practice)
+export FREENECT2_HOME=$HOME/freenect2_install
+export CFLAGS="-I$FREENECT2_HOME/include"
+export LDFLAGS="-L$FREENECT2_HOME/lib -Wl,-rpath,$FREENECT2_HOME/lib"
 export LD_LIBRARY_PATH=$FREENECT2_HOME/lib:$LD_LIBRARY_PATH
 
 cp /home/trevor/libfreenect2/include/libfreenect2/*.h ~/freenect2_install/include/libfreenect2/
