@@ -14,17 +14,22 @@
 
 #define MAX_LEN 1500
 #define PORT 12345
+#define MAX_PACKET_SIZE 1500
+#define MAX_SAMPLE_STR_LEN 30
 
-pthread_mutex_t UDPmutex = PTHREAD_MUTEX_INITIALIZER; /* mutex lock for history */
+static pthread_mutex_t UDPmutex = PTHREAD_MUTEX_INITIALIZER; /* mutex lock for history */
 
-pthread_t tidUDP;
+static pthread_t tidUDP;
 
 static bool exitSignal = false;
 static int socketDescriptor;
 static struct sockaddr_in sinRemote;
 
-static void UDP_process_message(char command[]);
+static int UDP_process_message(char command[]);
 
+void UDP_join_thread(void) {
+    pthread_join(tidUDP, NULL);
+}
 static void *UDPThreadFunc(void *pArg)
 {
     bool *exitSignal = ((bool *)pArg);
@@ -43,12 +48,16 @@ static void *UDPThreadFunc(void *pArg)
             messageRx[MAX_LEN - 1] = 0;
         }
 
-        printf("Message Recieved(%d bytes): '%s'\n", bytesRx, messageRx);
-        UDP_process_message(messageRx);
+        //printf("Message Recieved(%d bytes): '%s'\n", bytesRx, messageRx);
+        *exitSignal = UDP_process_message(messageRx);
 
-        *exitSignal = false;
         sleep_for_ms(100);
+        if (*exitSignal)
+        {
+            break;
+        }
     }
+    Sampler_cleanup();
     UDP_cleanup();
     return 0;
 }
@@ -65,14 +74,13 @@ void UDP_init(void)
     bind(socketDescriptor, (struct sockaddr *)&sin, sizeof(sin));
 
     pthread_create(&tidUDP, NULL, UDPThreadFunc, &exitSignal);
-    pthread_join(tidUDP, 0);
 }
 
 void UDP_cleanup(void)
 {
     close(socketDescriptor);
     pthread_mutex_destroy(&UDPmutex);
-    pthread_exit(0);
+    pthread_cancel(tidUDP);
 }
 
 static void UDP_send_message(char message[])
@@ -83,28 +91,18 @@ static void UDP_send_message(char message[])
 }
 
 static char prevCommand[MAX_LEN];
-static char *helpMessage = "Accepted command examples:"
-                           "count -- get the total number of samples taken.\n"
-                           "length -- get the number of samples taken in the previously completed second.\n"
-                           "dips -- get the number of dips in the previously completed second.\n"
-                           "history -- get all the samples in the previously completed second.\n"
-                           "stop -- cause the server program to end.\n"
-                           "<enter> -- repeat last command.\n"
-                           "?"
-                           "Accepted command examples:\n"
-                           "count -- get the total number of samples taken.\n"
-                           "length -- get the number of samples taken in the previously completed second.\n"
-                           "dips -- get the number of dips in the previously completed second.\n"
-                           "history -- get all the samples in the previously completed second.\n"
-                           "stop -- cause the server program to end.\n"
-                           "<enter> -- repeat last command.\n";
+static char *helpMessage = "\nAccepted command examples:\n"
+                           "count      -- get the total number of samples taken.\n"
+                           "length     -- get the number of samples taken in the previously completed second.\n"
+                           "dips       -- get the number of dips in the previously completed second.\n"
+                           "history    -- get all the samples in the previously completed second.\n"
+                           "stop       -- cause the server program to end.\n"
+                           "<enter>    -- repeat last command.\n";
 
-// static char prevReturnCommand[MAX_LEN];
-static void UDP_process_message(char command[])
+static char prevCommand[MAX_LEN] = "help";
+static int UDP_process_message(char command[])
 {
     char returnMessage[MAX_LEN];
-    snprintf(returnMessage, MAX_LEN, "Hello%d\n", 42);
-
     if (strcmp(command, "help") == 0 || strcmp(command, "?") == 0)
     {
 
@@ -120,62 +118,75 @@ static void UDP_process_message(char command[])
     }
     else if (strcmp(command, "length") == 0)
     {
-        snprintf(returnMessage, MAX_LEN, "# samples taken total: %d\n", Sampler_getHistorySize());
+        snprintf(returnMessage, MAX_LEN, "# samples taken last second: %d\n", Sampler_getHistorySize());
         returnMessage[MAX_LEN - 1] = '\0';
         UDP_send_message(returnMessage);
     }
     else if (strcmp(command, "dips") == 0)
     {
-        UDP_send_message("return how many dips were detected in the last second (?)");
+        snprintf(returnMessage, MAX_LEN, "# Dips: %d\n", Sampler_getDips());
+        returnMessage[MAX_LEN - 1] = '\0';
+        UDP_send_message(returnMessage);
     }
     else if (strcmp(command, "history") == 0)
     {
         int size = 0;
-        double* history = Sampler_getHistory(&size);
-        int samplesPerPacket = floor(1500 / sizeof(double));
-        int packets = ceil(size / (double)samplesPerPacket);
-        char* initial_str;
-        char* packet_str;
-        for (int i = 0; i < packets; i++) {
-            for (int j = 0; j < samplesPerPacket; j++) {
-                char* sampleData;
-                snprintf(sampleData, MAX_LEN, "%.3f,", history[i*samplesPerPacket + j]);
-                int str_len = strlen(packet_str);
-                free(packet_str);
-                packet_str = (char *)malloc(str_len + strlen(sampleData) + 1);
-                strcpy(packet_str, initial_str);
-                strcat(packet_str, sampleData);
-                packet_str = (char *)malloc(strlen(packet_str) + 1);
-                strcpy(initial_str, packet_str);
+        double *history = Sampler_getHistory(&size);
+        char packet_str[MAX_PACKET_SIZE + 1];
+        int history_index = 0;
+
+        while (history_index < size)
+        {
+            packet_str[0] = '\0';
+            int current_len = 0;
+
+            while (history_index < size)
+            {
+                char sample_str[MAX_SAMPLE_STR_LEN];
+                snprintf(sample_str, MAX_SAMPLE_STR_LEN, "%.3f, ", history[history_index]);
+                if ((history_index+1) % 10 == 0) {
+                    strcat(sample_str, "\n");
+                }
+                int sample_str_len = strlen(sample_str);
+                if (current_len + sample_str_len >= MAX_PACKET_SIZE)
+                {
+                    break;
+                }
+
+                strcat(packet_str, sample_str);
+
+                current_len += sample_str_len;
+                history_index++;
             }
-            UDP_send_message(packet_str);
+
+            if (current_len > 0 && packet_str[current_len - 1] == ',')
+            {
+                packet_str[current_len - 1] = '\0';
+            }
+
+            if (packet_str[0] != '\0')
+            {
+                UDP_send_message(packet_str);
+            }
         }
-
-
-        UDP_send_message("return all data samples from previous second, see pdf for details");
+        UDP_send_message("\n");
         free(history);
     }
-    else if (strcmp(command, "") == 0)
+    else if (strcmp(command, "") == 0 && strcmp(prevCommand, "") != 0)
     {
-        if (strcmp(command, prevCommand) == 0 && strcmp(command, "") != 0)
-        {
-            UDP_send_message("repeat previous command (if not first command!)");
-        }
+        UDP_process_message(prevCommand);
+        return 0;
     }
     else if (strcmp(command, "stop") == 0)
     {
-        UDP_send_message("exit the program gracefully, closing all open sockets threads dynamic memmory, etc");
+        //UDP_send_message("exit the program gracefully, closing all open sockets threads dynamic memmory, etc");
+        return 1;
+    }else {
+        return 0;
     }
-
-    for (size_t i = 0; i < MAX_LEN - 1; i++)
-    {
-        if (i < strlen(command) - 1)
-        {
-            prevCommand[i] = command[i];
-        }
-        else
-        {
-            prevCommand[i] = 0;
-        }
-    }
+    //printf("prevCommand: %s\n", prevCommand);
+    char commandBuffer[MAX_LEN];
+    strcpy(commandBuffer, command);
+    strcpy(prevCommand, commandBuffer);
+    return 0;
 }

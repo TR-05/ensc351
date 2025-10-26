@@ -6,5 +6,6 @@
 // Begin/end the background thread
 void UDP_init(void);
 void UDP_cleanup(void);
+void UDP_join_thread(void);
 
 #endif

@@ -15,12 +15,10 @@
 // Begin/end the background thread which samples light levels.
 void Sampler_init(void);
 void Sampler_cleanup(void);
-// Must be called once every 1s.
-// Moves the samples that it has been collecting this second into
-// the history, which makes the samples available for reads (below).
-void Sampler_moveCurrentDataToHistory(void);
 // Get the number of samples collected during the previous complete second.
 int Sampler_getHistorySize(void);
+// Get the number of dips in the last second.
+int Sampler_getDips(void);
 // Get a copy of the samples in the sample history.
 // Returns a newly allocated array and sets `size` to be the
 // number of elements in the returned array (output-only parameter).
