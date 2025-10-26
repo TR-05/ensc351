@@ -24,7 +24,11 @@ void swapContent(double *d1, double *d2)
  */
 void tradeArrays(double *array1, double *array2, int size)
 {
-	unsigned int i;
+	/*
+	Bug was here: i was set as an unsigned int, making the for loop not break and try to read array2[garbage number], causing the segfault. 
+	should be a signed int so the for loop bounds are correct, and it doesn't try to read the array out of bounds.
+	*/
+	int i = 0;
 	for (i = size-1; i >= 0; i--) {
 		swapContent(array1+i, array2+i);
 	}
