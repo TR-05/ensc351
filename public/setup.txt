@@ -183,3 +183,36 @@ aarch64-linux-gnu-gcc noworky.c -o noworky -Wall -g -std=c99 -D _POSIX_C_SOURCE=
 cp noworky ../../../public/myApps
 
 netcat -u 192.168.7.2 12345
+
+
+as3
+sudo apt install usbutils alsa-utils i2c-tools
+lsusb
+cat /proc/asound/cards
+
+sudo nano /etc/asound.conf
+
+write in the file (value depends on what shows up on catting the conf:
+defaults.pcm.card 0
+defaults.ctl.card 0
+
+speaker-test (plays white noise)
+alsamixer
+
+sudo apt update
+sudo apt upgrade
+sudo apt install espeak
+espeak 'All your bits are belong to us.' -w test.wav
+aplay test.wav
+
+sudo apt update
+sudo apt install libasound2
+ls /usr/lib/aarch64-linux-gnu/libasound.so.2*
+
+on HOST
+sudo apt update
+sudo dpkg --add-architecture arm64
+sudo apt update
+sudo apt install libasound2-dev:arm64
+ls /usr/lib/aarch64-linux-gnu/libasound.so
+

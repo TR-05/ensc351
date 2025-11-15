@@ -19,7 +19,8 @@
         "stdint.h": "c",
         "sampler.h": "c",
         "pthread.h": "c",
-        "spi.h": "c"
+        "spi.h": "c",
+        "audiomixer.h": "c"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
