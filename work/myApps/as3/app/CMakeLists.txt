@@ -22,6 +22,6 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
    COMMAND "$(CMAKE_COMMAND)" -E copy_directory
-      "${CMAKE_SOURCE_DIR}/wave-files"
+      "${CMAKE_SOURCE_DIR}/beatbox-wave-files"
      "$(HOME)/ensc351/public/myApps/beatbox-wave-files" 
   COMMENT "Copying WAVE files to public NFS directory")

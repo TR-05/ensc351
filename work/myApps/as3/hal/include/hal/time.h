@@ -8,7 +8,7 @@
 Header file giving basic time related functionality
 */
 
-long long get_time_in_ms(void);
-void sleep_for_ms(long long delayInMs);
+long long time_get_ms(void);
+void time_sleep_ms(float delayInMs);
 
 #endif // TIME_H

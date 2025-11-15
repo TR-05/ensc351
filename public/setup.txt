@@ -28,7 +28,7 @@ sudo apt upgrade # Optional, but a reasonable idea
 sudo apt install nfs-common
 sudo mkdir /mnt/remote
 sudo chown trevor /mnt/remote
-sudo mount -t nfs 192.168.7.1:/home/trevor/ENSC351/public /mnt/remote
+sudo mount -t nfs 192.168.7.1:/home/trevor/ensc351/public /mnt/remote
 		
 
 echo enable spi
