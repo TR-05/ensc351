@@ -2,6 +2,7 @@
 // which are left as incomplete.
 // Note: Generates low latency audio on BeagleBone Black; higher latency found on host.
 #include "hal/audioMixer.h"
+#include "hal/time.h"
 #include <stdio.h>	// for printf, fprintf
 #include <stdlib.h> // for malloc, free, exit
 #include <assert.h> // for assert()
@@ -14,7 +15,7 @@
 
 static snd_pcm_t *handle;
 
-#define DEFAULT_VOLUME 80
+#define DEFAULT_VOLUME 40
 
 #define SAMPLE_RATE 44100
 #define NUM_CHANNELS 1
@@ -366,6 +367,10 @@ void *playbackThread()
 {
 	while (!stopping)
 	{
+		//static long long last_time;
+		//printf ("dt: %llu\n", time_get_ms() - last_time);
+		//last_time = time_get_ms();
+	
 		// Generate next block of audio
 		fillPlaybackBuffer(playbackBuffer, playbackBufferSize);
 

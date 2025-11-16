@@ -13,6 +13,9 @@ target_link_libraries(${PROJECT_NAME} LINK_PRIVATE asound)
 target_link_libraries(${PROJECT_NAME} LINK_PRIVATE hal)
 target_link_libraries(${PROJECT_NAME} LINK_PRIVATE gpiod)
 target_link_libraries(${PROJECT_NAME}  PRIVATE m)
+target_link_libraries(${PROJECT_NAME} PRIVATE hal ${ALSA_LIBRARIES})
+target_link_libraries(${PROJECT_NAME} PRIVATE hal asound)
+
 # Copy executable to final location (change `a1` to project name as needed)
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD 
   COMMAND "${CMAKE_COMMAND}" -E copy 
