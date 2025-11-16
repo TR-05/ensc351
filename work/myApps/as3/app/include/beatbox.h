@@ -2,6 +2,7 @@
 #define _BEATBOX_H_
 
 void beatboxInit();
+void beatboxCleanup();
 
 void beatbox_hi_hat();
 void beatbox_base();

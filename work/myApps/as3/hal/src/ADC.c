@@ -14,6 +14,8 @@
 #include "hal/spi.h"
 #include "hal/time.h"
 #include <pthread.h>
+#include <math.h>
+#include "../../app/include/beatbox.h"
 /*
 simple ADC reading via the MCP3208 over spi
 */
@@ -59,6 +61,10 @@ static void *ADC_update_loop()
         raw = read_mcp3208_channel(ACEL_Z_CHANNEL);
         float acel_z = (((raw-1320) / 4095.0) * 16);
 
+
+        // add air guitar logic here, assume its facing upward
+        float mag_x = fabs(acel_x);
+        
         pthread_mutex_lock(&ADCMutex);
         Joystick_y = joystick_y;
         Acel_x = acel_x;
