@@ -11,9 +11,9 @@ enum Beat
     none,
     rock,
     custom
-} beat = custom;
+} beat = rock;
 
-static int BPM = 180; // [40,300]
+static int BPM = 120; // [40,300]
 
 
 wavedata_t hi_hat;
