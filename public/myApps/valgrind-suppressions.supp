@@ -1,0 +1,7 @@
+{
+   <libasound_allocs>
+   Memcheck:Leak
+   fun:malloc
+   ...
+   obj:*/libasound.so*
+}

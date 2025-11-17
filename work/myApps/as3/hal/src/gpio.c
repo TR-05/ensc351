@@ -15,7 +15,8 @@ struct gpiod_line_request *request1 = NULL;
 struct gpiod_line_request *request2 = NULL;
 struct gpiod_line_request *request3 = NULL;
 
-typedef struct {
+typedef struct
+{
     const char *chip_name;
     unsigned int line_offset;
     const char *label_name;
@@ -34,13 +35,11 @@ int chip_2_offset_count = 0;
 unsigned int chip3_offsets[8] = {0};
 int chip_3_offset_count = 0;
 
-typedef struct 
+typedef struct
 {
     unsigned int *offsets;
     int *count;
 } gpio_info_t;
-
-
 
 static gpio_info_t gpio_add_offset(const char chip[], unsigned int offset)
 {
@@ -92,15 +91,18 @@ static gpio_info_t gpio_add_offset(const char chip[], unsigned int offset)
 // initializes gpio communication with the gpio
 int gpio_initialize(int pin)
 {
-    if (chip) {
+    if (chip)
+    {
         gpiod_chip_close(chip);
         chip = NULL; // Set to NULL after freeing
     }
-    if (settings) {
+    if (settings)
+    {
         gpiod_line_settings_free(settings);
         settings = NULL;
     }
-    if (line_cfg) {
+    if (line_cfg)
+    {
         gpiod_line_config_free(line_cfg);
         line_cfg = NULL;
     }
@@ -151,7 +153,7 @@ int gpio_initialize(int pin)
             return 1;
         }
     }
-        else if (pin_map.chip_name[8] == '3')
+    else if (pin_map.chip_name[8] == '3')
     {
         gpiod_line_request_release(request3);
         request3 = gpiod_chip_request_lines(chip, NULL, line_cfg);
@@ -161,7 +163,6 @@ int gpio_initialize(int pin)
             return 1;
         }
     }
-
 
     return 0;
 }
@@ -199,124 +200,185 @@ bool gpio_read(int pin)
 
 void gpio_disable()
 {
+    // 1. Release all line requests
     if (request0)
     {
         gpiod_line_request_release(request0);
+        request0 = NULL;
     }
     if (request1)
     {
         gpiod_line_request_release(request1);
+        request1 = NULL;
     }
     if (request2)
     {
         gpiod_line_request_release(request2);
+        request2 = NULL;
     }
     if (request3)
     {
         gpiod_line_request_release(request3);
+        request3 = NULL;
     }
-    gpiod_line_config_free(line_cfg);
-    gpiod_line_settings_free(settings);
+
+    if (line_cfg)
+    {
+        gpiod_line_config_free(line_cfg);
+        line_cfg = NULL;
+    }
+    if (settings)
+    {
+        gpiod_line_settings_free(settings);
+        settings = NULL;
+    }
+
+    // 3. Close the last opened chip handle
     if (chip)
     {
         gpiod_chip_close(chip);
+        chip = NULL;
     }
+
     printf("gpio stopped\n");
 }
 
+static int gpio_map_label_to_gpio(int pin, gpio_map_t *result)
+{
 
-static int gpio_map_label_to_gpio(int pin, gpio_map_t *result) {
-    
     // --- GPIO Chip 1 Mappings ---
-    if (pin == 23) {
+    if (pin == 23)
+    {
         result->chip_name = "gpiochip1";
-        result->line_offset = 7;  // Line 7 is GPIO23
+        result->line_offset = 7; // Line 7 is GPIO23
         result->label_name = "GPIO23";
-    } else if (pin == 24) {
+    }
+    else if (pin == 24)
+    {
         result->chip_name = "gpiochip1";
-        result->line_offset = 10;  // Line 10 is GPIO24
+        result->line_offset = 10; // Line 10 is GPIO24
         result->label_name = "GPIO24";
-    } else if (pin == 3) {
+    }
+    else if (pin == 3)
+    {
         result->chip_name = "gpiochip1";
-        result->line_offset = 17;  // Line 17 is GPIO3
+        result->line_offset = 17; // Line 17 is GPIO3
         result->label_name = "GPIO3";
-    } else if (pin == 2) {
+    }
+    else if (pin == 2)
+    {
         result->chip_name = "gpiochip1";
-        result->line_offset = 18;  // Line 18 is GPIO2
+        result->line_offset = 18; // Line 18 is GPIO2
         result->label_name = "GPIO2";
-    
-    // --- GPIO Chip 2 Mappings ---
-    } else if (pin == 27) {
+
+        // --- GPIO Chip 2 Mappings ---
+    }
+    else if (pin == 27)
+    {
         result->chip_name = "gpiochip2";
-        result->line_offset = 33;  // Line 33 is GPIO27
+        result->line_offset = 33; // Line 33 is GPIO27
         result->label_name = "GPIO27";
-    } else if (pin == 26) {
+    }
+    else if (pin == 26)
+    {
         result->chip_name = "gpiochip2";
-        result->line_offset = 36;  // Line 36 is GPIO26
+        result->line_offset = 36; // Line 36 is GPIO26
         result->label_name = "GPIO26";
-    } else if (pin == 4) {
+    }
+    else if (pin == 4)
+    {
         result->chip_name = "gpiochip2";
-        result->line_offset = 38;  // Line 38 is GPIO4
+        result->line_offset = 38; // Line 38 is GPIO4
         result->label_name = "GPIO4";
-    } else if (pin == 22) {
+    }
+    else if (pin == 22)
+    {
         result->chip_name = "gpiochip2";
-        result->line_offset = 41;  // Line 41 is GPIO22
+        result->line_offset = 41; // Line 41 is GPIO22
         result->label_name = "GPIO22";
-    } else if (pin == 25) {
+    }
+    else if (pin == 25)
+    {
         result->chip_name = "gpiochip2";
-        result->line_offset = 42;  // Line 42 is GPIO25
+        result->line_offset = 42; // Line 42 is GPIO25
         result->label_name = "GPIO25";
 
-    // --- GPIO Chip 3 Mappings ---
-    } else if (pin == 16) {
+        // --- GPIO Chip 3 Mappings ---
+    }
+    else if (pin == 16)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 7;   // Line 7 is GPIO16
+        result->line_offset = 7; // Line 7 is GPIO16
         result->label_name = "GPIO16";
-    } else if (pin == 17) {
+    }
+    else if (pin == 17)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 8;   // Line 8 is GPIO17
+        result->line_offset = 8; // Line 8 is GPIO17
         result->label_name = "GPIO17";
-    } else if (pin == 21) {
+    }
+    else if (pin == 21)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 9;   // Line 9 is GPIO21
+        result->line_offset = 9; // Line 9 is GPIO21
         result->label_name = "GPIO21";
-    } else if (pin == 20) {
+    }
+    else if (pin == 20)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 10;  // Line 10 is GPIO20
+        result->line_offset = 10; // Line 10 is GPIO20
         result->label_name = "GPIO20";
-    } else if (pin == 18) {
+    }
+    else if (pin == 18)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 11;  // Line 11 is GPIO18
+        result->line_offset = 11; // Line 11 is GPIO18
         result->label_name = "GPIO18";
-    } else if (pin == 19) {
+    }
+    else if (pin == 19)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 12;  // Line 12 is GPIO19
+        result->line_offset = 12; // Line 12 is GPIO19
         result->label_name = "GPIO19";
-    } else if (pin == 15) {
+    }
+    else if (pin == 15)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 13;  // Line 13 is GPIO15
+        result->line_offset = 13; // Line 13 is GPIO15
         result->label_name = "GPIO15";
-    } else if (pin == 14) {
+    }
+    else if (pin == 14)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 14;  // Line 14 is GPIO14
+        result->line_offset = 14; // Line 14 is GPIO14
         result->label_name = "GPIO14";
-    } else if (pin == 5) {
+    }
+    else if (pin == 5)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 15;  // Line 15 is GPIO5
+        result->line_offset = 15; // Line 15 is GPIO5
         result->label_name = "GPIO5";
-    } else if (pin == 12) {
+    }
+    else if (pin == 12)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 16;  // Line 16 is GPIO12
+        result->line_offset = 16; // Line 16 is GPIO12
         result->label_name = "GPIO12";
-    } else if (pin == 6) {
+    }
+    else if (pin == 6)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 17;  // Line 17 is GPIO6
+        result->line_offset = 17; // Line 17 is GPIO6
         result->label_name = "GPIO6";
-    } else if (pin == 13) {
+    }
+    else if (pin == 13)
+    {
         result->chip_name = "gpiochip3";
-        result->line_offset = 18;  // Line 18 is GPIO13
+        result->line_offset = 18; // Line 18 is GPIO13
         result->label_name = "GPIO13";
-    } else {
+    }
+    else
+    {
         // Label not found in the defined inputs
         return -1;
     }

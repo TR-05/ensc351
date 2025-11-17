@@ -12,6 +12,7 @@
 #include <pthread.h>
 #include <limits.h>
 #include <alloca.h> // needed for mixer
+#include "../../app/include/periodTimer.h"
 
 static snd_pcm_t *handle;
 
@@ -22,6 +23,10 @@ static snd_pcm_t *handle;
 #define SAMPLE_SIZE (sizeof(short)) // bytes per sample
 // Sample size note: This works for mono files because each sample ("frame') is 1 value.
 // If using stereo files then a frame would be two samples.
+
+static snd_mixer_t *mixerHandle = NULL;
+static snd_mixer_selem_id_t *sid = NULL;
+static snd_mixer_elem_t *elem = NULL;
 
 static unsigned long playbackBufferSize = 0;
 static short *playbackBuffer = NULL;
@@ -51,7 +56,6 @@ static int volume = 0;
 
 void AudioMixer_init(void)
 {
-	AudioMixer_setVolume(DEFAULT_VOLUME);
 
 	// Initialize the currently active sound-bites being played
 	// REVISIT:- Implement this. Hint: set the pSound pointer to NULL for each
@@ -91,6 +95,22 @@ void AudioMixer_init(void)
 	// ..allocate playback buffer:
 	playbackBuffer = malloc(playbackBufferSize * sizeof(*playbackBuffer));
 
+	const char *card = "default";
+	// const char *selem_name = "PCM";	// For ZEN cape
+	const char *selem_name = "Speaker"; // For USB Audio
+	
+	snd_mixer_open(&mixerHandle, 0);
+	snd_mixer_attach(mixerHandle, card);
+	snd_mixer_selem_register(mixerHandle, NULL, NULL);
+	snd_mixer_load(mixerHandle);
+
+	snd_mixer_selem_id_alloca(&sid);
+	snd_mixer_selem_id_set_index(sid, 0);
+	snd_mixer_selem_id_set_name(sid, selem_name);
+	elem = snd_mixer_find_selem(mixerHandle, sid);
+	
+	AudioMixer_setVolume(DEFAULT_VOLUME);
+
 	// Launch playback thread:
 	pthread_create(&playbackThreadId, NULL, playbackThread, NULL);
 }
@@ -125,6 +145,7 @@ void AudioMixer_readWaveFileIntoMemory(char *fileName, wavedata_t *pSound)
 	{
 		fprintf(stderr, "ERROR: Unable to allocate %d bytes for file %s.\n",
 				sizeInBytes, fileName);
+		fclose(file);
 		exit(EXIT_FAILURE);
 	}
 
@@ -134,8 +155,10 @@ void AudioMixer_readWaveFileIntoMemory(char *fileName, wavedata_t *pSound)
 	{
 		fprintf(stderr, "ERROR: Unable to read %d samples from file %s (read %d).\n",
 				pSound->numSamples, fileName, samplesRead);
+		fclose(file);
 		exit(EXIT_FAILURE);
 	}
+	fclose(file);
 }
 
 void AudioMixer_freeWaveFileData(wavedata_t *pSound)
@@ -148,8 +171,12 @@ void AudioMixer_freeWaveFileData(wavedata_t *pSound)
 void AudioMixer_queueSound(wavedata_t *pSound)
 {
 	// Ensure we are only being asked to play "good" sounds:
-	assert(pSound->numSamples > 0);
-	assert(pSound->pData);
+	if (pSound->numSamples <= 0 || pSound->pData == NULL)
+	{
+		// If the sound is bad, print an error and safely return.
+		fprintf(stderr, "WARNING: Attempted to queue an invalid sound (0 samples or NULL data). Skipping.\n");
+		return;
+	}
 
 	// Insert the sound by searching for an empty sound bite spot
 	/*
@@ -193,6 +220,13 @@ void AudioMixer_cleanup(void)
 	snd_pcm_drain(handle);
 	snd_pcm_close(handle);
 
+	if (mixerHandle != NULL) {
+        snd_mixer_close(mixerHandle);
+        mixerHandle = NULL;
+    }
+	
+	snd_config_delete(snd_config);
+	
 	// Free playback buffer
 	// (note that any wave files read into wavedata_t records must be freed
 	//  in addition to this by calling AudioMixer_freeWaveFileData() on that struct.)
@@ -224,26 +258,10 @@ void AudioMixer_setVolume(int newVolume)
 	volume = newVolume;
 
 	long min, max;
-	snd_mixer_t *mixerHandle;
-	snd_mixer_selem_id_t *sid;
-	const char *card = "default";
-	// const char *selem_name = "PCM";	// For ZEN cape
-	const char *selem_name = "Speaker"; // For USB Audio
 
-	snd_mixer_open(&mixerHandle, 0);
-	snd_mixer_attach(mixerHandle, card);
-	snd_mixer_selem_register(mixerHandle, NULL, NULL);
-	snd_mixer_load(mixerHandle);
-
-	snd_mixer_selem_id_alloca(&sid);
-	snd_mixer_selem_id_set_index(sid, 0);
-	snd_mixer_selem_id_set_name(sid, selem_name);
-	snd_mixer_elem_t *elem = snd_mixer_find_selem(mixerHandle, sid);
 
 	snd_mixer_selem_get_playback_volume_range(elem, &min, &max);
 	snd_mixer_selem_set_playback_volume_all(elem, volume * max / 100);
-
-	snd_mixer_close(mixerHandle);
 }
 
 // Fill the buff array with new PCM values to output.
@@ -260,14 +278,10 @@ static void fillPlaybackBuffer(short *buff, int size)
 			continue;
 		}
 
-		// Load values into local variables for potential efficiency and readability
-		wavedata_t *pSound = soundBites[i].pSound;
-		short *pData = (short *)pSound->pData;
-		int numSamples = pSound->numSamples;
+		int numSamples = soundBites[i].pSound->numSamples;
 		int location = soundBites[i].location;
 
 		// Determine how many samples to mix in this iteration
-		// Play up to `size` samples (the buffer size) OR until the end of the sound file.
 		int samplesToMix = size;
 		if (location + samplesToMix > numSamples)
 		{
@@ -277,26 +291,17 @@ static void fillPlaybackBuffer(short *buff, int size)
 		// Mix the samples
 		for (int j = 0; j < samplesToMix; j++)
 		{
-			// Get the sample from the sound bite
-			short newSample = pData[location + j];
-
-			// Get the current sample from the mix buffer
+			short newSample = soundBites[i].pSound->pData[location + j];
 			int currentMix = buff[j];
-
-			// Perform the addition (mixing) using an int to check for overflow/underflow
 			int newMix = currentMix + newSample;
 
-			// Notes on "adding" PCM samples:
-			// - PCM is stored as signed shorts (between SHRT_MIN and SHRT_MAX).
-			// - When adding values, ensure there is not an overflow. Any values which would
-			//   greater than SHRT_MAX should be clipped to SHRT_MAX; likewise for underflow.
 			if (newMix > SHRT_MAX)
 			{
-				buff[j] = SHRT_MAX; // Clip overflow
+				buff[j] = SHRT_MAX;
 			}
 			else if (newMix < SHRT_MIN)
 			{
-				buff[j] = SHRT_MIN; // Clip underflow
+				buff[j] = SHRT_MIN;
 			}
 			else
 			{
@@ -304,8 +309,6 @@ static void fillPlaybackBuffer(short *buff, int size)
 			}
 		}
 
-		// * Record that this portion of the sound bite has been played back by incrementing
-		//   the location inside the data where play-back currently is.
 		location += samplesToMix;
 		soundBites[i].location = location; // Write back the updated location
 
@@ -313,9 +316,7 @@ static void fillPlaybackBuffer(short *buff, int size)
 		//   soundBites[] array.
 		if (location >= numSamples)
 		{
-			soundBites[i].pSound = NULL; // Clear the slot
-			// No need to free pSound->pData here; the client code is responsible
-			// for calling AudioMixer_freeWaveFileData() later.
+			soundBites[i].pSound = NULL;
 		}
 	}
 
@@ -367,12 +368,13 @@ void *playbackThread()
 {
 	while (!stopping)
 	{
-		//static long long last_time;
-		//printf ("dt: %llu\n", time_get_ms() - last_time);
-		//last_time = time_get_ms();
-	
+		// static long long last_time;
+		// printf ("dt: %llu\n", time_get_ms() - last_time);
+		// last_time = time_get_ms();
+
 		// Generate next block of audio
 		fillPlaybackBuffer(playbackBuffer, playbackBufferSize);
+		Period_markEvent(PERIOD_EVENT_FILL_BUFFER);
 
 		// Output the audio
 		snd_pcm_sframes_t frames = snd_pcm_writei(handle,

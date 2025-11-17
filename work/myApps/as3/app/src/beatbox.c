@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <math.h>
+#include <stdlib.h>
 
 static pthread_t BeatboxThread;
 static pthread_mutex_t BeatboxMutex = PTHREAD_MUTEX_INITIALIZER; // not sure if necessary rn
@@ -21,7 +22,7 @@ enum Beat
 } beat = rock;
 
 static int BPM = 120;   // [40,300]
-static int Volume = 80; // [0,100]
+static int Volume = 40; // [0,100]
 
 wavedata_t hi_hat;
 wavedata_t base;
@@ -94,92 +95,16 @@ static void custom_beat(float beat)
 }
 
 static float current_beat_length = 4.5;
-
+static int stopping = 0;
 void *beatboxLoop()
 {
     float i = 1;
-    int lastEncoderPos = Encoder_read();
-    int lastEncoderPress = 0;
-    AudioMixer_setVolume(Volume);
     while (1)
     {
-        // config from hardware input:
-        // Encoder Relative BPM change [40,300], increments of 5
-        int encoderPos = Encoder_read();
-        int delta = encoderPos - lastEncoderPos;
-        if (delta != 0)
-        {
-            BPM += delta * 5;
+        if (stopping) {
+            break;
         }
-        lastEncoderPos = encoderPos;
-
-        if (BPM < 40)
-        {
-            BPM = 40;
-        }
-        if (BPM > 300)
-        {
-            BPM = 300;
-        }
-
-        // Encoder Press Track Cycle
-        int encoderPress = Encoder_button_pressing();
-        if (encoderPress && !lastEncoderPress)
-        {
-            beat++;
-            if (beat > 2)
-            {
-                beat = 0;
-            }
-        }
-        lastEncoderPress = encoderPress;
-
-        // Joystick Volume control [0,100], increments of 5
-        // accelerometer -> new acel play beat, hysteresis?
-        static int changingVolume;
-        static long long changingVolumeT0;
-        float joystick = ADC_read_joystick();
-        if (joystick > 0.3 || joystick < -0.3)
-        {
-            if (!changingVolume)
-            {
-                changingVolumeT0 = time_get_ms();
-                Volume += (joystick / fabs(joystick)) * 5;
-                if (Volume > 100)
-                {
-                    Volume = 100;
-                }
-                if (Volume < 0)
-                {
-                    Volume = 0;
-                }
-                AudioMixer_setVolume(Volume);
-            }
-
-            long long t = time_get_ms() - changingVolumeT0;
-            if (t > 200)
-            {
-                Volume += (joystick / fabs(joystick)) * 5;
-                if (Volume > 100)
-                {
-                    Volume = 100;
-                }
-                if (Volume < 0)
-                {
-                    Volume = 0;
-                }
-                AudioMixer_setVolume(Volume);
-                changingVolumeT0 = time_get_ms();
-            }
-
-            changingVolume = 1;
-        }
-        else
-        {
-            changingVolume = 0;
-        }
-
-        printf("BPM: %d, %d, M%d, %.2f, X %5.2f, Y %5.2f, Z: %5.2f\n", BPM, Volume, beat, ADC_read_joystick(), ADC_read_acel_x(), ADC_read_acel_y(), ADC_read_acel_z());
+        AudioMixer_setVolume(Volume);
 
         switch (beat)
         {
@@ -209,12 +134,14 @@ void *beatboxLoop()
 
         // ensure BPM isn't changed at a critical point
         pthread_mutex_lock(&BeatboxMutex);
-        time_sleep_ms(1000 * (60.0 / BPM / 2.0));
+        int current_bpm = BPM;
         pthread_mutex_unlock(&BeatboxMutex);
+        time_sleep_ms(1000 * (60.0 / current_bpm / 2.0));
     }
+    return 0;
 }
 
-void beatboxInit()
+void beatbox_init()
 {
     AudioMixer_init();
     AudioMixer_readWaveFileIntoMemory("beatbox-wave-files/100053__menegass__gui-drum-cc.wav", &hi_hat);
@@ -228,9 +155,59 @@ void beatboxInit()
     pthread_create(&BeatboxThread, NULL, beatboxLoop, NULL);
 }
 
-void beatboxCleanup()
+int beatbox_bpm()
+{
+    int val;
+    pthread_mutex_lock(&BeatboxMutex);
+    val = BPM;
+    pthread_mutex_unlock(&BeatboxMutex);
+    return val;
+}
+
+int beatbox_volume()
+{
+    int val;
+    pthread_mutex_lock(&BeatboxMutex);
+    val = Volume;
+    pthread_mutex_unlock(&BeatboxMutex);
+    return val;
+}
+
+int beatbox_track()
+{
+    int val;
+    pthread_mutex_lock(&BeatboxMutex);
+    val = beat;
+    pthread_mutex_unlock(&BeatboxMutex);
+    return val;
+}
+
+void beatbox_set_bpm(int bpm) {
+    pthread_mutex_lock(&BeatboxMutex);
+    BPM = bpm;
+    pthread_mutex_unlock(&BeatboxMutex);
+}
+
+void beatbox_set_volume(int volume) {
+    pthread_mutex_lock(&BeatboxMutex);
+    Volume = volume;
+    pthread_mutex_unlock(&BeatboxMutex);
+}
+
+void beatbox_set_track(int track) {
+    pthread_mutex_lock(&BeatboxMutex);
+    beat = track;
+    pthread_mutex_unlock(&BeatboxMutex);
+}
+
+
+void beatbox_cleanup()
 {
     printf("Cleaning up...\n");
+    stopping = 1;
+    pthread_join(BeatboxThread, NULL);
+    AudioMixer_cleanup();
+    pthread_mutex_destroy(&BeatboxMutex);
     AudioMixer_freeWaveFileData(&hi_hat);
     AudioMixer_freeWaveFileData(&base);
     AudioMixer_freeWaveFileData(&snare);
@@ -238,7 +215,4 @@ void beatboxCleanup()
     AudioMixer_freeWaveFileData(&co);
     AudioMixer_freeWaveFileData(&splash);
     AudioMixer_freeWaveFileData(&tom);
-    AudioMixer_cleanup();
-    pthread_mutex_destroy(&BeatboxMutex);
-    pthread_cancel(BeatboxThread);
 }
