@@ -70,7 +70,7 @@ static gpio_info_t gpio_add_offset(const char chip[], unsigned int offset)
     bool already = false;
     for (int i = 0; i < *c; i++)
     {
-        if (offset == offsets[*c])
+        if (offset == offsets[i])
         {
             already = true;
             break;
@@ -91,77 +91,80 @@ static gpio_info_t gpio_add_offset(const char chip[], unsigned int offset)
 // initializes gpio communication with the gpio
 int gpio_initialize(int pin)
 {
-    if (chip)
-    {
-        gpiod_chip_close(chip);
-        chip = NULL; // Set to NULL after freeing
-    }
-    if (settings)
-    {
-        gpiod_line_settings_free(settings);
-        settings = NULL;
-    }
-    if (line_cfg)
-    {
-        gpiod_line_config_free(line_cfg);
-        line_cfg = NULL;
-    }
+    struct gpiod_line_request **current_request_ptr = NULL;
 
     gpio_map_label_to_gpio(pin, &pin_map);
     gpio_info_t info = gpio_add_offset(pin_map.chip_name, pin_map.line_offset);
     char chip_path[64];
 
-    // 1. Open the GPIO chip by path
-    snprintf(chip_path, sizeof(chip_path), "/dev/%s", pin_map.chip_name);
-
-    chip = gpiod_chip_open(chip_path);
-    settings = gpiod_line_settings_new();
-
-    gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_INPUT);
-    gpiod_line_settings_set_bias(settings, GPIOD_LINE_BIAS_PULL_UP);
-    line_cfg = gpiod_line_config_new();
-
-    gpiod_line_config_add_line_settings(line_cfg, info.offsets, *info.count, settings);
-
     if (pin_map.chip_name[8] == '0')
     {
-        gpiod_line_request_release(request0);
-        request0 = gpiod_chip_request_lines(chip, NULL, line_cfg);
-        if (!request0)
-        {
-            fprintf(stderr, "Error requesting GPIO line: pin %d %s\n", pin, strerror(errno));
-            return 1;
-        }
+        current_request_ptr = &request0;
     }
     else if (pin_map.chip_name[8] == '1')
     {
-        gpiod_line_request_release(request1);
-        request1 = gpiod_chip_request_lines(chip, NULL, line_cfg);
-        if (!request1)
-        {
-            fprintf(stderr, "Error requesting GPIO line: pin %d %s\n", pin, strerror(errno));
-            return 1;
-        }
+        current_request_ptr = &request1;
     }
     else if (pin_map.chip_name[8] == '2')
     {
-        gpiod_line_request_release(request2);
-        request2 = gpiod_chip_request_lines(chip, NULL, line_cfg);
-        if (!request2)
-        {
-            fprintf(stderr, "Error requesting GPIO line: pin %d %s\n", pin, strerror(errno));
-            return 1;
-        }
+        current_request_ptr = &request2;
     }
     else if (pin_map.chip_name[8] == '3')
     {
-        gpiod_line_request_release(request3);
-        request3 = gpiod_chip_request_lines(chip, NULL, line_cfg);
-        if (!request3)
-        {
-            fprintf(stderr, "Error requesting GPIO line: pin %d %s\n", pin, strerror(errno));
+        current_request_ptr = &request3;
+    }
+
+    if (!current_request_ptr)
+    {
+        fprintf(stderr, "Error: Unknown GPIO chip name index.\n");
+        return 1;
+    }
+
+    snprintf(chip_path, sizeof(chip_path), "/dev/%s", pin_map.chip_name);
+
+    if (chip)
+    {
+        gpiod_chip_close(chip);
+        chip = NULL;
+    }
+
+    chip = gpiod_chip_open(chip_path);
+    if (!chip)
+    {
+        fprintf(stderr, "Error opening chip %s: %s\n", chip_path, strerror(errno));
+        return 1;
+    }
+
+    if (!settings)
+    {
+        settings = gpiod_line_settings_new();
+        if (!settings)
             return 1;
-        }
+        gpiod_line_settings_set_direction(settings, GPIOD_LINE_DIRECTION_INPUT);
+        gpiod_line_settings_set_bias(settings, GPIOD_LINE_BIAS_PULL_UP);
+    }
+
+    if (line_cfg)
+    {
+        gpiod_line_config_free(line_cfg);
+    }
+    line_cfg = gpiod_line_config_new();
+    if (!line_cfg)
+        return 1;
+
+    gpiod_line_config_add_line_settings(line_cfg, info.offsets, *info.count, settings);
+
+    if (*current_request_ptr)
+    {
+        gpiod_line_request_release(*current_request_ptr);
+    }
+
+    *current_request_ptr = gpiod_chip_request_lines(chip, NULL, line_cfg);
+
+    if (!*current_request_ptr)
+    {
+        fprintf(stderr, "Error requesting GPIO line: pin %d on %s: %s\n", pin, pin_map.chip_name, strerror(errno));
+        return 1;
     }
 
     return 0;
@@ -191,16 +194,15 @@ bool gpio_read(int pin)
 
     if (line_value == GPIOD_LINE_VALUE_ERROR)
     {
-        // Check for a recoverable interrupt error
         if (errno == EINTR)
             perror("Error reading GPIO line value using gpiod_line_request_get_value");
     }
+    // Return true if active (pressed) for a pull-up setup
     return line_value != GPIOD_LINE_VALUE_INACTIVE;
 }
 
 void gpio_disable()
 {
-    // 1. Release all line requests
     if (request0)
     {
         gpiod_line_request_release(request0);
@@ -233,19 +235,22 @@ void gpio_disable()
         settings = NULL;
     }
 
-    // 3. Close the last opened chip handle
     if (chip)
     {
         gpiod_chip_close(chip);
         chip = NULL;
     }
 
+    chip_0_offset_count = 0;
+    chip_1_offset_count = 0;
+    chip_2_offset_count = 0;
+    chip_3_offset_count = 0;
+
     printf("gpio stopped\n");
 }
 
 static int gpio_map_label_to_gpio(int pin, gpio_map_t *result)
 {
-
     // --- GPIO Chip 1 Mappings ---
     if (pin == 23)
     {
@@ -379,7 +384,6 @@ static int gpio_map_label_to_gpio(int pin, gpio_map_t *result)
     }
     else
     {
-        // Label not found in the defined inputs
         return -1;
     }
 

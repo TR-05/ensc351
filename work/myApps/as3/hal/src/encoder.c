@@ -83,7 +83,6 @@ static void *Encoder_update_loop()
         pthread_mutex_unlock(&EncoderMutex);
         time_sleep_ms(.5);
     }
-    Encoder_cleanup();
     return 0;
 }
 
@@ -123,5 +122,6 @@ int Encoder_cleanup(void)
     stopping = 1;
     pthread_join(EncoderThread, NULL);
     pthread_mutex_destroy(&EncoderMutex);
+    gpio_disable();
     return 0;
 }
