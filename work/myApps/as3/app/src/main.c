@@ -22,9 +22,9 @@ void* printLoop() {
         Period_statistics_t a;
         Period_getStatisticsAndClear(PERIOD_EVENT_READ_ACCELEROMETER, &a);
 
-        printf("M%d %dbpm vol:%d", beatbox_track(), beatbox_bpm(), beatbox_volume());
-        printf(" Audio[%.3f, %.3f] avg %.3f/%d", b.minPeriodInMs, b.maxPeriodInMs, b.avgPeriodInMs, b.numSamples);
-        printf(" Accel[%.3f, %.3f] avg %.3f/%d\n",  a.minPeriodInMs, a.maxPeriodInMs, a.avgPeriodInMs, a.numSamples);
+        //printf("M%d %dbpm vol:%d", beatbox_track(), beatbox_bpm(), beatbox_volume());
+        //printf(" Audio[%.3f, %.3f] avg %.3f/%d", b.minPeriodInMs, b.maxPeriodInMs, b.avgPeriodInMs, b.numSamples);
+        //printf(" Accel[%.3f, %.3f] avg %.3f/%d\n",  a.minPeriodInMs, a.maxPeriodInMs, a.avgPeriodInMs, a.numSamples);
         time_sleep_ms(1000);
     }
     return 0;
